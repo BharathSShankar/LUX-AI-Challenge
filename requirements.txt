@@ -1,2 +1,5 @@
 numpy
 ipykernel
+wheel
+moviepy 
+luxai_s2
