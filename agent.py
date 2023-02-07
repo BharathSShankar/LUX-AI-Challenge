@@ -1,5 +1,4 @@
-from lux.kit import obs_to_game_state, GameState
-from lux.config import EnvConfig
+from lux.kit import obs_to_game_state, GameState, EnvConfig
 from lux.utils import direction_to, my_turn_to_place_factory
 import numpy as np
 import sys
@@ -35,14 +34,6 @@ class Agent():
 
     def act(self, step: int, obs, remainingOverageTime: int = 60):
         actions = dict()
-        
-        """
-        optionally do forward simulation to simulate positions of units, lichen, etc. in the future
-        from lux.forward_sim import forward_sim
-        forward_obs = forward_sim(obs, self.env_cfg, n=2)
-        forward_game_states = [obs_to_game_state(step + i, self.env_cfg, f_obs) for i, f_obs in enumerate(forward_obs)]
-        """
-
         game_state = obs_to_game_state(step, self.env_cfg, obs)
         factories = game_state.factories[self.player]
         game_state.teams[self.player].place_first
@@ -51,8 +42,9 @@ class Agent():
             if factory.power >= self.env_cfg.ROBOTS["HEAVY"].POWER_COST and \
             factory.cargo.metal >= self.env_cfg.ROBOTS["HEAVY"].METAL_COST:
                 actions[unit_id] = factory.build_heavy()
-            if factory.water_cost(game_state) <= factory.cargo.water / 5 - 200:
-                actions[unit_id] = factory.water()
+            if self.env_cfg.max_episode_length - game_state.real_env_steps < 50:
+                if factory.water_cost(game_state) <= factory.cargo.water:
+                    actions[unit_id] = factory.water()
             factory_tiles += [factory.pos]
             factory_units += [factory]
         factory_tiles = np.array(factory_tiles)
@@ -77,12 +69,12 @@ class Agent():
                     closest_ice_tile = ice_tile_locations[np.argmin(ice_tile_distances)]
                     if np.all(closest_ice_tile == unit.pos):
                         if unit.power >= unit.dig_cost(game_state) + unit.action_queue_cost(game_state):
-                            actions[unit_id] = [unit.dig(repeat=0, n=1)]
+                            actions[unit_id] = [unit.dig(repeat=0)]
                     else:
                         direction = direction_to(unit.pos, closest_ice_tile)
                         move_cost = unit.move_cost(game_state, direction)
                         if move_cost is not None and unit.power >= move_cost + unit.action_queue_cost(game_state):
-                            actions[unit_id] = [unit.move(direction, repeat=0, n=1)]
+                            actions[unit_id] = [unit.move(direction, repeat=0)]
                 # else if we have enough ice, we go back to the factory and dump it.
                 elif unit.cargo.ice >= 40:
                     direction = direction_to(unit.pos, closest_factory_tile)
@@ -92,5 +84,5 @@ class Agent():
                     else:
                         move_cost = unit.move_cost(game_state, direction)
                         if move_cost is not None and unit.power >= move_cost + unit.action_queue_cost(game_state):
-                            actions[unit_id] = [unit.move(direction, repeat=0, n=1)]
+                            actions[unit_id] = [unit.move(direction, repeat=0)]
         return actions

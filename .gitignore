@@ -1,3 +1,5 @@
 .vscode
 .DS_Store
 luxEnv
+*__pycache__
+.ipynb_checkpoints

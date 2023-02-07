@@ -3,3 +3,4 @@ ipykernel
 wheel
 moviepy 
 luxai_s2
+opencv-python
