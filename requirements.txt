@@ -3,4 +3,6 @@ ipykernel
 wheel
 moviepy 
 luxai_s2
+jax
+flax
 opencv-python
