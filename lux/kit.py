@@ -127,7 +127,7 @@ class GameState:
     A GameState object at step env_steps. Copied from luxai_s2/state/state.py
     """
     env_steps: int
-    env_cfg: dict
+    env_cfg: EnvConfig
     board: Board
     units: Dict[str, Dict[str, Unit]] = field(default_factory=dict)
     factories: Dict[str, Dict[str, Factory]] = field(default_factory=dict)
