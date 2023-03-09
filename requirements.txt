@@ -5,4 +5,5 @@ moviepy
 luxai_s2
 jax
 flax
+gym
 opencv-python

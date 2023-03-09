@@ -1,3 +1,9 @@
+# LUX AI Season 2 Submission:
+This is an attempt to create an AI to play the LUX AI season 2 game. I am also using this competiton submission as my project for CS4246 - AI Planning and Decision Making.
+
+## Proposed Approach
+
+
 # Lux AI Season 2 Python Kit
 
 This is the folder for the Python kit. Please make sure to read the instructions as they are important regarding how you will write a bot and submit it to the competition.
