@@ -10,6 +10,11 @@ class LuxObsWrapper(ObservationWrapper):
     def observation(self, observation: Dict[str, Union[str, Dict]]) -> Dict[str, Union[str, Dict]]:
         return super().observation(observation)
 
+    @staticmethod
+    def process_obs(self, observation):
+        procObs = {}
+        procObs[]
+
 class LuxRewardWrapper(RewardWrapper):
 
     def __init__(self, env: Env) -> None:
