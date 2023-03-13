@@ -17,8 +17,7 @@ def complete_state_view(gameState: GameState, player:str) -> np.ndarray:
     # Ally Player
     ## channel[0]: Number of units
     ## channel[1]: Robot Type
-    ## channel[2:5]: Resources (Power, Ice, Ore) of each unit
-    ## channel[5]: Action Queue
+    ## channel[2:7]: Resources (Power, Ice, Ore, Water, Metal) of each unit
     for unit in gameState.units[player].values():
         x, y = unit.pos
         stateSpace[0, x, y] += 1
@@ -26,29 +25,29 @@ def complete_state_view(gameState: GameState, player:str) -> np.ndarray:
         stateSpace[2, x, y] = unit.power
         stateSpace[3, x, y] = unit.cargo.ice
         stateSpace[4, x, y] = unit.cargo.ore
-        stateSpace[5, x, y] = unit.action_queue
+        stateSpace[5, x, y] = unit.cargo.water
+        stateSpace[6, x, y] = unit.cargo.metal
 
-    ## channel[6]: Number of factories
-    ## channel[7:12]: Resources (Power, Ice, Ore, Water, Metal) of each factory
+    ## channel[7]: Number of factories
+    ## channel[8:13]: Resources (Power, Ice, Ore, Water, Metal) of each factory
     fplayer_fstrain_fpos_map = {"player_0":{}, "player_1":{}}
     for factory in gameState.factories[player].values():
         x, y = factory.pos
-        stateSpace[6, x, y] += 1
-        stateSpace[7, x, y] = factory.power
-        stateSpace[8, x, y] = factory.cargo.ice
-        stateSpace[9, x, y] = factory.cargo.ore
-        stateSpace[10, x, y] = factory.cargo.water
-        stateSpace[11, x, y] = factory.cargo.metal
-        # To be used later for channel 12, 13, 14
+        stateSpace[7, x, y] += 1
+        stateSpace[8, x, y] = factory.power
+        stateSpace[9, x, y] = factory.cargo.ice
+        stateSpace[10, x, y] = factory.cargo.ore
+        stateSpace[11, x, y] = factory.cargo.water
+        stateSpace[12, x, y] = factory.cargo.metal
+        # To be used later for channel 13, 14
         fplayer_fstrain_fpos_map[player][factory.strain_id] = [x, y]
 
-    ## channel[12, 13, 14] factory_lichen_tile, factory_lichen, ally_total_lichen will be added at the end under map obs
+    ## channel[13, 14] factory_lichen_tile, ally_factory_lichen will be added at the end under map obs
 
     # Opposition
     ## channel[15]: Number of units
     ## channel[16]: Robot Type
-    ## channel[17:20]: Resources (Power, Ice, Ore) of each unit
-    ## channel[20]: Action Queue
+    ## channel[17:22]: Resources (Power, Ice, Ore, Water, Metal) of each unit
     for unit in gameState.units[opposition].values():
         x, y = unit.pos
         stateSpace[15, x, y] += 1
@@ -56,26 +55,27 @@ def complete_state_view(gameState: GameState, player:str) -> np.ndarray:
         stateSpace[17, x, y] = unit.power
         stateSpace[18, x, y] = unit.cargo.ice
         stateSpace[19, x, y] = unit.cargo.ore
-        stateSpace[20, x, y] = unit.action_queue
+        stateSpace[20, x, y] = unit.cargo.water
+        stateSpace[21, x, y] = unit.cargo.metal
 
-    ## channel[21]: Number of factories
-    ## channel[22:27]: Resources (Power, Ice, Ore, Water, Metal) of each factory
+    ## channel[22]: Number of factories
+    ## channel[23:28]: Resources (Power, Ice, Ore, Water, Metal) of each factory
     for factory in gameState.factories[player].values():
         x, y = factory.pos
-        stateSpace[21, x, y] += 1
-        stateSpace[22, x, y] = factory.power
-        stateSpace[23, x, y] = factory.cargo.ice
-        stateSpace[24, x, y] = factory.cargo.ore
-        stateSpace[25, x, y] = factory.cargo.water
-        stateSpace[26, x, y] = factory.cargo.metal
+        stateSpace[22, x, y] += 1
+        stateSpace[23, x, y] = factory.power
+        stateSpace[24, x, y] = factory.cargo.ice
+        stateSpace[25, x, y] = factory.cargo.ore
+        stateSpace[26, x, y] = factory.cargo.water
+        stateSpace[27, x, y] = factory.cargo.metal
 
-        # To be used later for channel 27, 28, 29
+        # To be used later for channel 28, 29
         fplayer_fstrain_fpos_map[opposition][factory.strain_id] = [x, y]
 
-    ## channel[27, 28, 29] factory_lichen_tile, factory_lichen, oppo_total_lichen will be added at the end under map obs
+    ## channel[28, 29] factory_lichen_tile, oppo_factory_lichen will be added at the end under map obs
 
     # Map Observation
-    ## Channel[12:15, 27:30] Lichen mentioned above
+    ## Channel[13:15, 28:30] Lichen mentioned above
     for width in range(len(gameState.env_cfg["map_size"])):
         for height in range(len(gameState.env_cfg["map_size"])):
             strain_id = gameState.board.lichen_strains[width][height]
@@ -84,13 +84,11 @@ def complete_state_view(gameState: GameState, player:str) -> np.ndarray:
             else:
                 if strain_id in fplayer_fstrain_fpos_map[player].keys():
                     f_xpos, f_ypos = fplayer_fstrain_fpos_map[player][strain_id]
-                    stateSpace[12, f_xpos, f_ypos] += 1
-                    stateSpace[13, f_xpos, f_ypos] += gameState.board.lichen[width][height]
+                    stateSpace[13, f_xpos, f_ypos] += 1
                     stateSpace[14, f_xpos, f_ypos] += gameState.board.lichen[width][height]
                 else:
                     f_xpos, f_ypos = fplayer_fstrain_fpos_map[opposition][strain_id]
-                    stateSpace[27, f_xpos, f_ypos] += 1
-                    stateSpace[28, f_xpos, f_ypos] += gameState.board.lichen[width][height]
+                    stateSpace[28, f_xpos, f_ypos] += 1
                     stateSpace[29, f_xpos, f_ypos] += gameState.board.lichen[width][height]
                     
     ## channel[30]: Amount of rubbles
@@ -103,8 +101,10 @@ def complete_state_view(gameState: GameState, player:str) -> np.ndarray:
     stateSpace[34] = gameState.env_cfg.CYCLE_LENGTH - (gameState.real_env_steps() % gameState.env_cfg.CYCLE_LENGTH)
     ## channel[35]: DAY_OR_NIGHT
     stateSpace[35] = 0 if gameState.is_day() else 1
-    
     return stateSpace
+
+
+# removed action queue from features
 
 
 
