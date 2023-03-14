@@ -8,7 +8,7 @@ from lux.team import Team, FactionTypes
 from lux.unit import Unit
 from lux.factory import Factory
 
-def globalInfoVec(gameState: GameState, player):
+def globalInfoVec(gameState: GameState, player: str):
     player = player
     opposition = "player_1" if player == "player_0" else "player_0"
     giv_size = GIV_SIZE
@@ -75,7 +75,7 @@ def globalInfoVec(gameState: GameState, player):
 
     return stateSpace
 
-def imageFeatures(gameState:GameState, player):
+def imageFeatures(gameState:GameState, player: str):
     player = player
     opposition = "player_1" if player == "player_0" else "player_0"
     img_size = IMG_FEATURES_SIZE
@@ -140,6 +140,7 @@ def imageFeatures(gameState:GameState, player):
                 stateSpace[30, x, y] = gameState.board.lichen[x, y]
     
     return stateSpace
+
 
 
 

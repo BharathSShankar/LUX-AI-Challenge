@@ -13,7 +13,6 @@ class LuxObsWrapper(ObservationWrapper):
     @staticmethod
     def process_obs(self, observation):
         procObs = {}
-        procObs[]
 
 class LuxRewardWrapper(RewardWrapper):
 
