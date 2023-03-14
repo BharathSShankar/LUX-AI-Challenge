@@ -1,0 +1,31 @@
+from enum import IntEnum
+
+MAP_SIZE = 48
+ROBOT_ACTIONS = 13
+FACTORY_ACTIONS = 3
+GIV_SIZE = 33
+IMG_FEATURES_SIZE = 31
+
+class RobotAction(IntEnum):	
+	MOVE_CENTER = 0
+	MOVE_UP = 1
+	MOVE_RIGHT = 2
+	MOVE_DOWN = 3
+	MOVE_LEFT = 4
+	TRANSFER_UP = 5
+	TRANSFER_RIGHT = 6
+	TRANSFER_DOWN = 7
+	TRANSFER_LEFT = 8
+	PICKUP = 9
+	DIG = 10
+	SELF_DESTRUCT = 11
+	RECHARGE = 12
+
+class FactoryAction(IntEnum):
+	BUILD_LIGHT = 0
+	BUILD_HEAVY = 1
+	WATER = 2
+
+
+	
+
