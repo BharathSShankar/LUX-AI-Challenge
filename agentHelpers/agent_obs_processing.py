@@ -1,6 +1,6 @@
 import numpy as np
 
-from agentHelpers.agent_constants import GIV_SIZE, IMG_FEATURES_SIZE
+from agentHelpers.agent_constants import FACTORY_VEC, GIV_SIZE, IMG_FEATURES_SIZE, UNIT_VEC
 from lux.kit import GameState
 from lux.cargo import UnitCargo
 from lux.config import EnvConfig
@@ -8,7 +8,7 @@ from lux.team import Team, FactionTypes
 from lux.unit import Unit
 from lux.factory import Factory
 
-def globalInfoVec(gameState: GameState, player: str):
+def global_2_vec(gameState: GameState, player: str):
     player = player
     opposition = "player_1" if player == "player_0" else "player_0"
     giv_size = GIV_SIZE
@@ -75,7 +75,7 @@ def globalInfoVec(gameState: GameState, player: str):
 
     return stateSpace
 
-def imageFeatures(gameState:GameState, player: str):
+def img_2_vec(gameState:GameState, player: str):
     player = player
     opposition = "player_1" if player == "player_0" else "player_0"
     img_size = IMG_FEATURES_SIZE
@@ -142,8 +142,43 @@ def imageFeatures(gameState:GameState, player: str):
     return stateSpace
 
 
+def fact_2_vec(gameState: GameState, player : str, factoryId: str):
+    factory = gameState.factories[player][factoryId]
+    fact_dim = FACTORY_VEC
+    fact_vec = np.zeros((fact_dim))
+    x, y = factory.pos
+    
+    fact_vec[0] = x
+    fact_vec[1] = y
 
+    fact_vec[2] = factory.power
+    fact_vec[3] = factory.cargo.ice
+    fact_vec[4] = factory.cargo.ore
+    fact_vec[5] = factory.cargo.water
+    fact_vec[6] = factory.cargo.metal
 
+    lich_str = factory.strain_id
+    lich_mask = gameState.board.lichen_strains == lich_str
+    fact_vec[8] += np.sum(gameState.board.lichen * lich_mask)
+
+    return fact_vec
+
+def unit_2_vec(gameState: GameState, player: str, unitId: str):
+    unit = gameState.units[player][unitId]
+    unit_dim = UNIT_VEC
+    unit_vec = np.zeros((unit_dim))
+    x, y = unit.pos
+
+    unit_vec[0] = x
+    unit_vec[1] = y
+
+    unit_vec[2] = unit.power
+    unit_vec[3] = unit.cargo.ice
+    unit_vec[4] = unit.cargo.ore
+    unit_vec[5] = unit.cargo.water
+    unit_vec[6] = unit.cargo.metal
+
+    return unit_vec
 
         
     
