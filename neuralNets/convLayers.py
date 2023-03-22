@@ -1,89 +1,47 @@
+from typing import Tuple
 import flax.linen as nn
 import jax.numpy as jnp
 
-class ResLayer(nn.Module):
-    kernel_size: int
-    num_channels: int
-    strides: tuple = (1, 1)
-    training: bool = True
-
-    def setup(self) -> None:
-
-        self.conv1 = nn.Conv(
-            self.num_channels, 
-            kernel_size = (self.kernel_size, self.kernel_size),
-            padding = "same",
-            strides = self.strides
-        )
-        self.bn1 = nn.BatchNorm(not self.training)
-
-        self.conv2 = nn.Conv(
-            self.num_channels, 
-            kernel_size = (self.kernel_size, self.kernel_size),
-            padding = "same",
-            strides = self.strides 
-        )
-
-        self.bn2 = nn.BatchNorm(not self.training)
-
-        self.conv3 = nn.Conv(
-            self.num_channels,
-            kernel_size = (1,1),
-            strides = self.strides
-        )
-
-    def __call__(self, X:jnp.array) -> jnp.array:
-        Y = nn.relu(self.bn1(self.conv1(X)))
-        Y = self.bn2(self.conv2(X))
-        Y += X
-        return nn.relu(X)
-
 class SELayer(nn.Module):
-    num_channels: int
-    reduction: int = 16
+    """Squeeze-excitation layer for ResNet."""
 
-    def setup(self) -> None:
-        self.fc = nn.Sequential(
-            nn.Dense(self.num_channels, self.num_channels // 16),
-            nn.relu(),
-            nn.Dense(self.num_channels // 16, self.num_channels),
-            nn.sigmoid()
-        )
-    
-    def __call__(self, X: jnp.array) -> jnp.array:
-        b, _, _, c= X.shape
-        Y = jnp.mean(X, axis = [1, 2], keepdims=False)
-        Y = self.fc(Y)
-        Y = jnp.reshape(Y, (b, 1, 1, c))
-        Y = jnp.broadcast_to(Y, X.shape)
-        return Y * X 
+    channels: int
 
-class ResSEBlock(nn.Module):
-    kernel_size: int
-    num_channels: int 
-    strides: tuple
-    training: bool 
-    reduction: int
-    out_channels:int
+    @nn.compact
+    def __call__(self, x):
+        x_global_avg = jnp.mean(x, axis=(1, 2), keepdims=True)
+        x = nn.Dense(self.channels // 16, name='fc1')(x_global_avg)
+        x = nn.relu(x)
+        x = nn.Dense(self.channels, name='fc2')(x)
+        x = nn.sigmoid(x)
+        return x * x_global_avg
 
-    def setup(self) -> None:
+class ResNetBlock(nn.Module):
+    """Residual block for ResNet."""
 
-        self.resLayer = ResLayer(
-            kernel_size = self.kernel_size, 
-            num_channels = self.num_channels,
-            strides = self.strides,
-            training = self.training
-        )
+    channels: int
+    strides: Tuple[int, int] = (1, 1)
+    use_projection: bool = False
+    use_se: bool = False
 
-        self.seLayer = SELayer(
-            num_channels = self.num_channels,
-            reduction = self.reduction
-        )
+    @nn.compact
+    def __call__(self, x):
+        shortcut = x
 
-        self.finConv = nn.Conv(self.out_channels, strides=(1, 1))
+        # Projection shortcut in case input and output shapes are different
+        if self.use_projection:
+            shortcut = nn.Conv(self.channels, self.strides, (1, 1), name='shortcut_conv')(shortcut)
+            shortcut = nn.BatchNorm(name='shortcut_bn')(shortcut)
 
-    def __call__(self, X:jnp.array) -> jnp.array:
-        X = self.resLayer(X)
-        X = self.seLayer(X)
-        X = self.finConv(X)
-        return X
+        x = nn.Conv(self.channels, (3, 3), self.strides, name='conv1')(x)
+        x = nn.BatchNorm(name='bn1')(x)
+        x = nn.relu(x)
+
+        x = nn.Conv(self.channels, (3, 3), (1, 1), name='conv2')(x)
+        x = nn.BatchNorm(name='bn2')(x)
+
+        if self.use_se:
+            x = SELayer(self.channels)(x)
+
+        return nn.relu(x + shortcut)
+

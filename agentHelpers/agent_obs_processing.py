@@ -1,4 +1,4 @@
-import numpy as np
+import jax.numpy as jnp
 
 from agentHelpers.agent_constants import FACTORY_VEC, GIV_SIZE, IMG_FEATURES_SIZE, UNIT_VEC
 from lux.kit import GameState
@@ -8,11 +8,11 @@ from lux.team import Team, FactionTypes
 from lux.unit import Unit
 from lux.factory import Factory
 
-def global_2_vec(gameState: GameState, player: str):
+def global_2_vec(gameState: GameState, player: str) -> jnp.array:
     player = player
     opposition = "player_1" if player == "player_0" else "player_0"
     giv_size = GIV_SIZE
-    stateSpace = np.zeros(giv_size).astype(np.float32)
+    stateSpace = jnp.zeros(giv_size).astype(jnp.float32)
     
     own_st_id = set()
     opp_st_id = set()
@@ -46,11 +46,11 @@ def global_2_vec(gameState: GameState, player: str):
             stateSpace[7] += 1
         else:
             stateSpace[8] += 1
-        stateSpace[14] += unit.cargo.metal
-        stateSpace[15] += unit.cargo.water
-        stateSpace[16] += unit.cargo.ore
-        stateSpace[17] += unit.cargo.ice
-        stateSpace[18] += unit.power
+        stateSpace[14] += unit.cargo.metal 
+        stateSpace[15] += unit.cargo.water 
+        stateSpace[16] += unit.cargo.ore 
+        stateSpace[17] += unit.cargo.ice 
+        stateSpace[18] += unit.power 
     
     for unit in gameState.units[opposition].values():
         if unit.unit_type == "LIGHT":
@@ -75,11 +75,11 @@ def global_2_vec(gameState: GameState, player: str):
 
     return stateSpace
 
-def img_2_vec(gameState:GameState, player: str):
+def img_2_vec(gameState:GameState, player: str) -> jnp.array:
     player = player
     opposition = "player_1" if player == "player_0" else "player_0"
     img_size = IMG_FEATURES_SIZE
-    stateSpace = np.zeros(img_size, gameState.env_cfg.map_size, gameState.env_cfg.map_size).astype(np.float32) 
+    stateSpace = jnp.zeros(img_size, gameState.env_cfg.map_size, gameState.env_cfg.map_size).astype(jnp.float32) 
 
     own_lic_str = set()
     opp_lic_str = set()
@@ -141,11 +141,10 @@ def img_2_vec(gameState:GameState, player: str):
     
     return stateSpace
 
-
-def fact_2_vec(gameState: GameState, player : str, factoryId: str):
+def fact_2_vec(gameState: GameState, player : str, factoryId: str) -> jnp.array:
     factory = gameState.factories[player][factoryId]
     fact_dim = FACTORY_VEC
-    fact_vec = np.zeros((fact_dim))
+    fact_vec = jnp.zeros((fact_dim))
     x, y = factory.pos
     
     fact_vec[0] = x
@@ -159,14 +158,14 @@ def fact_2_vec(gameState: GameState, player : str, factoryId: str):
 
     lich_str = factory.strain_id
     lich_mask = gameState.board.lichen_strains == lich_str
-    fact_vec[8] += np.sum(gameState.board.lichen * lich_mask)
+    fact_vec[8] += jnp.sum(gameState.board.lichen * lich_mask)
 
     return fact_vec
 
-def unit_2_vec(gameState: GameState, player: str, unitId: str):
+def unit_2_vec(gameState: GameState, player: str, unitId: str) -> jnp.array:
     unit = gameState.units[player][unitId]
     unit_dim = UNIT_VEC
-    unit_vec = np.zeros((unit_dim))
+    unit_vec = jnp.zeros((unit_dim))
     x, y = unit.pos
 
     unit_vec[0] = x
@@ -179,7 +178,3 @@ def unit_2_vec(gameState: GameState, player: str, unitId: str):
     unit_vec[6] = unit.cargo.metal
 
     return unit_vec
-
-        
-    
-
