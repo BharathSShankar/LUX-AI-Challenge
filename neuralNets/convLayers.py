@@ -23,7 +23,7 @@ class ResNetBlock(nn.Module):
     strides: Tuple[int, int] = (1, 1)
     use_projection: bool = False
     use_se: bool = False
-
+    ksize : int = 3
     @nn.compact
     def __call__(self, x):
         shortcut = x
@@ -33,11 +33,11 @@ class ResNetBlock(nn.Module):
             shortcut = nn.Conv(self.channels, self.strides, (1, 1), name='shortcut_conv')(shortcut)
             shortcut = nn.BatchNorm(name='shortcut_bn')(shortcut)
 
-        x = nn.Conv(self.channels, (3, 3), self.strides, name='conv1')(x)
+        x = nn.Conv(self.channels, (self.ksize, self.ksize), self.strides, name='conv1')(x)
         x = nn.BatchNorm(name='bn1')(x)
         x = nn.relu(x)
 
-        x = nn.Conv(self.channels, (3, 3), (1, 1), name='conv2')(x)
+        x = nn.Conv(self.channels, (self.ksize, self.ksize), (1, 1), name='conv2')(x)
         x = nn.BatchNorm(name='bn2')(x)
 
         if self.use_se:

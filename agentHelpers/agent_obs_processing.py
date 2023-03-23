@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 
-from agentHelpers.agent_constants import FACTORY_VEC, GIV_SIZE, IMG_FEATURES_SIZE, UNIT_VEC
+from agentHelpers.agent_constants import EARLY_VEC, FACTORY_VEC, GIV_SIZE, IMG_FEATURES_SIZE, UNIT_VEC
 from lux.kit import GameState
 from lux.cargo import UnitCargo
 from lux.config import EnvConfig
@@ -178,3 +178,31 @@ def unit_2_vec(gameState: GameState, player: str, unitId: str) -> jnp.array:
     unit_vec[6] = unit.cargo.metal
 
     return unit_vec
+
+def map_2_vec(gameState: GameState, player : str):
+    player = player
+    opposition = "player_1" if player == "player_0" else "player_0"
+    img_size = EARLY_VEC
+    stateSpace = jnp.zeros(img_size, gameState.env_cfg.map_size, gameState.env_cfg.map_size).astype(jnp.float32)  
+
+    stateSpace[0, :, :] = gameState.board.ice
+    stateSpace[1, :, :] = gameState.board.ore
+    stateSpace[2, :, :] = gameState.board.rubble
+
+    for factory in gameState.factories[player].values():
+        x, y = factory.pos
+        stateSpace[3, x, y] = 1
+        stateSpace[4, x, y] = factory.power
+        stateSpace[5, x, y] = factory.cargo.ice
+        stateSpace[6, x, y] = factory.cargo.ore
+        stateSpace[7, x, y] = factory.cargo.metal
+        stateSpace[8, x, y] = factory.cargo.water
+    
+    for factory in gameState.factories[opposition].values():
+        x,y = factory.pos
+        stateSpace[9, x, y] = 1
+        stateSpace[10, x, y] = factory.power
+        stateSpace[11, x, y] = factory.cargo.ice
+        stateSpace[12, x, y] = factory.cargo.ore
+        stateSpace[13, x, y] = factory.cargo.metal
+        stateSpace[14, x, y] = factory.cargo.water
