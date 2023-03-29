@@ -21,7 +21,7 @@ class ResNetBlock(nn.Module):
 
     channels: int
     strides: Tuple[int, int] = (1, 1)
-    use_projection: bool = False
+    use_projection: bool = True
     use_se: bool = False
     ksize : int = 3
     @nn.compact

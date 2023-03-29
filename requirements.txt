@@ -8,3 +8,4 @@ flax
 gym
 opencv-python
 rlax
+juxai-s2
