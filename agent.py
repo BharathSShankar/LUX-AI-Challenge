@@ -1,6 +1,7 @@
 from lux.kit import obs_to_game_state, GameState, EnvConfig
 from lux.utils import direction_to, my_turn_to_place_factory
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 import sys
 class Agent():
     def __init__(self, player: str, env_cfg: EnvConfig) -> None:
@@ -9,11 +10,47 @@ class Agent():
         np.random.seed(0)
         self.env_cfg: EnvConfig = env_cfg
 
-    # TODO: Placement and Bidding Policy
+    def bid_policy(self, obs, w1=5, w2=5, w3=0.1):
+        ice_map = obs["board"]["ice"]
+        ice_tile_locations = np.argwhere(ice_map == 1)
+        ore_map = obs["board"]["ore"]
+        ore_tile_locations = np.argwhere(ore_map == 1)
+        rubble_map = obs["board"]["rubble"]
+        res_count = len(ice_tile_locations) + len(ore_tile_locations)
+        if res_count < 6:
+            w1 *= 2
+        elif res_count < 12:
+            w1 *= 1.5
+        elif res_count > 18:
+            w1 = 0
+        else:
+            res_count = 0
+        ice_tile_distances = np.zeros((EnvConfig.map_size, EnvConfig.map_size))
+        ore_tile_distances = np.zeros((EnvConfig.map_size, EnvConfig.map_size))
+        for i in range(len(EnvConfig.map_size)):
+            for j in range(len(EnvConfig.map_size)):
+                ice_tile_distances[i, j] = np.mean((ice_tile_locations-[i,j])**2, 1)
+                ore_tile_distances[i, j] = np.mean((ore_tile_locations-[i,j])**2, 1)
+        combine_distances = np.add(ice_tile_distances, ore_tile_distances)
+        smallest_distance = np.argmin(combine_distances)
+        if smallest_distance < 12:
+            w2*= 2
+        elif smallest_distance < 24:
+            w2*=1.5
+        elif smallest_distance > 36:
+            w2 = 0
+
+        # TODO: Add rubble area as a bidding factor
+
+        bid = w1 * res_count + w2 * smallest_distance
+        return bid
+
+    # TODO: Placement Policy
     def early_setup(self, step: int, obs, remainingOverageTime: int = 60):
         if step == 0:
             # bid 0 to not waste resources bidding and declare as the default faction
-            return dict(faction="AlphaStrike", bid=0)
+            bid = self.bid_policy(obs)
+            return dict(faction="AlphaStrike", bid=bid)
         else:
             game_state = obs_to_game_state(step, self.env_cfg, obs)
             # factory placement period
