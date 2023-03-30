@@ -9,6 +9,7 @@ class Agent():
         np.random.seed(0)
         self.env_cfg: EnvConfig = env_cfg
 
+    # TODO: Placement and Bidding Policy
     def early_setup(self, step: int, obs, remainingOverageTime: int = 60):
         if step == 0:
             # bid 0 to not waste resources bidding and declare as the default faction
