@@ -6,7 +6,9 @@ from agentHelpers.agent_act_space import unit_action_space, fact_action_space
 from gym import spaces, Space
 import flax.linen as nn
 from lux.kit import GameState
+import jax
 
+KEY = jax.random.PRNGKey(0)
 
 class Controller:
     def __init__(self, action_space: Space.Space) -> None:
@@ -39,14 +41,25 @@ class OverallController(Controller):
 
         return actions
 
-    def get_action_queue(self, unit_action:jnp.array) -> npt.NDArray:
+    def get_action_queue(self, unit_action:jnp.array, R_val, cont_mean:jnp.array, cont_std) -> npt.NDArray:
         output = np.zeros((20, 6))
 
-        output[:, 0] = jnp.argmax(unit_action[:, :6], axis=1)
-        output[:, 1] = jnp.argmax(unit_action[:, 6:11], axis = 1)
-        output[:, 2] = jnp.argmax(unit_action[:, 11:16], axis = 1)
-        output[:, 3] = self.env_cfg.max_transfer_amount * (nn.sigmoid(unit_action[:, 16]) > 0.5)
-        output[:, 4] = jnp.round(unit_action[:, 17])
-        output[:, 5] = jnp.round(unit_action[:, 18])
-
+        action_list = jax.random.categorical(KEY, unit_action)
+        R_val_list = jax.random.categorical(KEY, R_val)
+        cont_vals = cont_mean + jax.random.normal(KEY, shape = (20,)) * cont_std
+        cont_vals = jax.clip(cont_vals, 0, 0.9)
+        n_r_vals = (cont_vals * jnp.array([10, 4])).astype(int)
+        output[:, 4:] = n_r_vals
+        output[:, 3] = 100
+        for i, action in enumerate(action_list):
+            if action < 5:
+                output[i, 0] = 0
+                output[i, 1] = action
+            elif action < 9:
+                output[i, 0] = 1
+                output[i, 1] = action - 4
+            else:
+                output[i, 0] = action - 7
+            output[i, 2] = R_val_list[i]
+            
         return output
