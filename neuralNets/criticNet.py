@@ -7,7 +7,7 @@ from neuralNets.convLayers import ResNetBlock
 
 from neuralNets.embeddings import EmbeddingLayer
 
-class FullNetGame(nn.Module):
+class CriticGame(nn.Module):
     num_resid_layers:int
     channel_nums: List[int]
     k_sizes: List[int]
@@ -20,16 +20,10 @@ class FullNetGame(nn.Module):
     map_size : int = 48
 
     @nn.compact
-    def __call__(self, global_info: jnp.array, img_info: jnp.array, fact_vec: jnp.array, unit_vecs:jnp.array):
+    def __call__(self, global_info: jnp.array, img_info: jnp.array):
 
         global_emb = EmbeddingLayer(self.embed_dim)(global_info)
         global_emb = EmbeddingLayer(self.embed_dim * self.map_size * self.map_size)(global_emb)
-
-        fact_emb = EmbeddingLayer(self.embed_dim)(fact_vec)
-        fact_emb = EmbeddingLayer(self.embed_dim * 2)(fact_emb)
-
-        unit_emb = EmbeddingLayer(self.embed_dim)(unit_vecs)
-        unit_emb = EmbeddingLayer(self.embed_dim * 2)(unit_emb) 
 
         global_emb = global_emb.reshape((-1, self.map_size, self.map_size))
 
@@ -46,14 +40,15 @@ class FullNetGame(nn.Module):
         
         globalFeatures = img_features.reshape((img_features.shape[0], -1))
 
-        unit_actions, fact_actions = Att4Actions(60, 60)(globalFeatures, unit_emb, fact_emb)
-
-        to_change = nn.sigmoid(nn.Dense(1)(unit_actions))
+        value = nn.Dense(self.embed_dim // 4)(globalFeatures)
+        value = nn.LayerNorm()(value)
+        value = nn.relu(value)
         
-        unit_actions = nn.Dense(360)(unit_actions)
-        fact_actions = nn.Dense(3)(fact_actions)
+        value = nn.Dense(self.embed_dim // 16)(value)
+        value = nn.LayerNorm()(value)
+        value = nn.relu(value)
 
-        unit_actions = unit_actions.reshape((unit_actions.shape[0], 20, 18)) 
-        fact_actions = nn.softmax(fact_actions)
-
-        return to_change, unit_actions, fact_actions
+        value = nn.Dense(1)(value)
+        value = nn.tanh(value) 
+        
+        return  value

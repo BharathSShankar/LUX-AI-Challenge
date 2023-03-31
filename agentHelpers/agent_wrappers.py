@@ -27,10 +27,12 @@ class JuxWrapperEnv(gym.Wrapper):
 
         new_state_mod = new_state.to_lux()
 
-        reward_p0 = rewards + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_0", "player_1", self.reward_weights)
+        reward_p0 = rewards + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_0", "player_1", self.reward_weights) 
+        reward_p0 -= JuxWrapperEnv.get_dense_rewards(state.to_lux(), "player_0", "player_1", self.reward_weights) 
+        
         reward_p1 = rewards + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_1", "player_0", self.reward_weights)
-
-        return new_state, reward_p0, reward_p1, new_state_mod
+        reward_p0 -= JuxWrapperEnv.get_dense_rewards(state.to_lux(), "player_1", "player_0", self.reward_weights) 
+        return new_state, obs, [reward_p0, reward_p1], dones, infos
         
     @staticmethod
     def convert_obs(obs:GameState, player) -> Dict[str, jnp.array]:

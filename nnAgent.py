@@ -2,6 +2,7 @@ from agentHelpers.agent_controller import OverallController
 from agentHelpers.agent_obs_processing import map_2_vec
 from agentHelpers.agent_wrappers import JuxWrapperEnv
 from lux.kit import obs_to_game_state, GameState, EnvConfig
+from acme import core
 from lux.utils import direction_to, my_turn_to_place_factory
 import numpy as np
 import sys
@@ -10,7 +11,7 @@ import os.path as osp
 MODEL_FACTORY = "./trainedModels/FactoryPlacementModel"
 MODEL_GAME = "./trainedModels/GamePlacementModel"
 
-class nnAgent:
+class nnAgent(core.Actor):
 
     def __init__(self, player: str, env_cfg: EnvConfig, controller: OverallController) -> None:
         self.player = player
