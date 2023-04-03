@@ -10,3 +10,4 @@ opencv-python
 rlax
 juxai-s2
 dm-haiku
+rlax

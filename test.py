@@ -1,5 +1,8 @@
+from functools import partial
 import jax
 import jax.numpy as jnp
+import gym
+import numpy as np
 
-actions = jnp.array([[1., 2., 4.], [1., 2., 4.]]) + jax.random.normal(jax.random.PRNGKey(0), shape = (2, 3)) * jnp.array([[1., 0.2, .8], [1., 0.2, .8]])
-print(actions)
+fun = jax.grad(lambda x, y: x**2 + y / 2, argnums=(0, 1))
+print(fun(1.0, 2.0))

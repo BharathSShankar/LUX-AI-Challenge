@@ -21,35 +21,44 @@ class OverallController(Controller):
 
     def convert_output_to_actions(
             self, 
-            player:str,
-            gameState: GameState,
-            to_change:jnp.array, 
-            unit_actions:jnp.array, 
-            fact_actions:jnp.array,
-
+            player,
+            gameState,
+            to_change : jnp.array,
+            unit_actions_logits : jnp.array,
+            fact_actions_logits : jnp.array,
+            unit_actions_disc_params_R : jnp.array,
+            unit_actions_disc_params_Rep : jnp.array,
+            unit_actions_disc_params_N : jnp.array,
+            facts_exist,
+            units_exist
         ) -> Dict[str, Union[int, npt.NDArray]]:
 
         to_change = to_change > 0.5
         actions = {}
+        act_probs= {}
 
-        for i, fact_id in enumerate(sorted(gameState.factories[player])):
-            actions[fact_id] = jnp.argmax(fact_actions[i])
+        for i in range(len(facts_exist)):
+            if facts_exist[i]:
+                fact_id = "fact_" + str(i) 
+                actions[fact_id] = jax.random.categorical(KEY, logits=fact_actions_logits[i])
+                act_probs[fact_id] = fact_actions_logits[i, actions[fact_id]]
 
-        for i, unit_id in enumerate(sorted(gameState.units[player])):
-            if to_change[i]:
-                actions[unit_id] = self.get_action_queue(unit_actions[i])
+        for i in range(len(units_exist)):
+            if units_exist[i]:
+                unit_id = "unit_" + str(i) 
+                if to_change[i]:
+                    actions[unit_id], act_probs[unit_id] = self.get_action_queue(unit_actions_logits[i], unit_actions_disc_params_R[i], unit_actions_disc_params_N[i], unit_actions_disc_params_Rep[i])
 
-        return actions
+        return actions, act_probs
 
-    def get_action_queue(self, unit_action:jnp.array, R_val, cont_mean:jnp.array, cont_std) -> npt.NDArray:
+    def get_action_queue(self, unit_action:jnp.array, R_val:jnp.array, N_val:jnp.array, Rep_val: jnp.array) -> npt.NDArray:
         output = np.zeros((20, 6))
 
         action_list = jax.random.categorical(KEY, unit_action)
         R_val_list = jax.random.categorical(KEY, R_val)
-        cont_vals = cont_mean + jax.random.normal(KEY, shape = (20,)) * cont_std
-        cont_vals = jax.clip(cont_vals, 0, 0.9)
-        n_r_vals = (cont_vals * jnp.array([10, 4])).astype(int)
-        output[:, 4:] = n_r_vals
+        N_val_list = jax.random.categorical(KEY, N_val)
+        Rep_val_list = jax.random.categorical(KEY, Rep_val)
+        prob_lists = []
         output[:, 3] = 100
         for i, action in enumerate(action_list):
             if action < 5:
@@ -61,5 +70,7 @@ class OverallController(Controller):
             else:
                 output[i, 0] = action - 7
             output[i, 2] = R_val_list[i]
-            
-        return output
+            output[i, 4] = N_val_list[i] + 1
+            output[i, 5] = Rep_val_list[i] + 1
+            prob_lists.append([unit_action[i, action], R_val[i, R_val_list[i]], N_val[i, N_val_list[i]], Rep_val[i, Rep_val_list[i]]])
+        return output, jnp.array(prob_lists)

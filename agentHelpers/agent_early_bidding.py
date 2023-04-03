@@ -11,7 +11,7 @@ def fact_placement_score(img_feat: np.array):
     ice_weight = 2
     ore_weight = 1
 
-    rubble_weight = - 0.5
+    rubble_weight = - 0.1
     
     own_factories = gaussian_filter(img_feat[3], sigma = 7) 
     opp_factories = gaussian_filter(img_feat[9], sigma = 7) 

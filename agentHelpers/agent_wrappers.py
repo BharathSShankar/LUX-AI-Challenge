@@ -5,9 +5,41 @@ import gym
 from jux.env import JuxEnv, JuxAction
 from gym import ObservationWrapper, Env, RewardWrapper, ActionWrapper
 from typing import Dict, Union
+
+import numpy as np
 from lux.kit import GameState, obs_to_game_state
 
 from agentHelpers.agent_obs_processing import fact_2_vec, global_2_vec, img_2_vec, unit_2_vec
+
+LIC_WT = 0.1
+REW_WTS = jnp.array([
+    50,
+    0.005,
+    0.006,
+    0.003,
+    0.004,
+    0.0001,
+    -50,
+    -0.005,
+    -0.006,
+    -0.003,
+    -0.004,
+    -0.0001,
+    1,
+    10,
+    -0.0001,
+    -0.0001,
+    0.001,
+    0.002,
+    0.0005,
+    -1,
+    -10,
+    0.0001,
+    0.0001,
+    -0.001,
+    -0.002,
+    -0.0005,
+])
 
 class JuxWrapperEnv(gym.Wrapper):
     def __init__(self, env:JuxEnv, rew_weights):
@@ -27,11 +59,11 @@ class JuxWrapperEnv(gym.Wrapper):
 
         new_state_mod = new_state.to_lux()
 
-        reward_p0 = rewards + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_0", "player_1", self.reward_weights) 
+        reward_p0 = LIC_WT * (rewards[0] - rewards[1]) + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_0", "player_1", self.reward_weights)
         reward_p0 -= JuxWrapperEnv.get_dense_rewards(state.to_lux(), "player_0", "player_1", self.reward_weights) 
-        
-        reward_p1 = rewards + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_1", "player_0", self.reward_weights)
-        reward_p0 -= JuxWrapperEnv.get_dense_rewards(state.to_lux(), "player_1", "player_0", self.reward_weights) 
+
+        reward_p1 = LIC_WT * (rewards[1] - rewards[0]) + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_1", "player_0", self.reward_weights)
+        reward_p1 -= JuxWrapperEnv.get_dense_rewards(state.to_lux(), "player_1", "player_0", self.reward_weights)
         return new_state, obs, [reward_p0, reward_p1], dones, infos
         
     @staticmethod
@@ -40,15 +72,27 @@ class JuxWrapperEnv(gym.Wrapper):
         obs_dict["GIV"] = global_2_vec(obs, player)
         obs_dict["IMG"] = img_2_vec(obs, player)
 
-        fact_list = []
-        for fact in sorted(obs.factories[player]):
-            fact_list.append(fact_2_vec(obs, player, fact))
-        obs_dict["FACT"] = jax.lax.concatenate(fact_list, 0)
+        fact_list = np.zeros((40, 8))
+        facts_exist = np.zeros((40,))
 
-        unit_list = []
-        for unit in sorted(obs.units[player]):
-            unit_list.append(unit_2_vec(obs, player, unit))
-        obs_dict["UNIT"] = jax.lax.concatenate(unit_list, 0)
+        for fact in obs.factories[player]:
+            num = int(fact.split("_")[-1])
+            fact_list[num, :] = fact_2_vec(obs, player, fact)
+            facts_exist[num] = 1
+
+        obs_dict["FACT"] = jnp.array(fact_list)
+        obs_dict["ACT_FACTS"] = jnp.array(facts_exist)
+
+        unit_list = np.zeros((300, 7))
+        units_exist = np.zeroes((300,)) 
+
+        for unit in obs.units[player]:
+            num = int(unit.split("_")[-1])
+            unit_list[num, :] = unit_2_vec(obs, player, unit)
+
+        obs_dict["UNIT"] = jnp.array(unit_list)
+        obs_dict["ACT_UNITS"] = jnp.array(units_exist)
+        
         return obs_dict 
     
     @staticmethod
@@ -83,12 +127,13 @@ class JuxWrapperEnv(gym.Wrapper):
     
         for unit in gameState.units[opposition].values():
             if unit.unit_type == "LIGHT":
-                reward_mat[21] += 1
+                reward_mat[19] += 1
             else:
-                reward_mat[22] += 1
-            reward_mat[28] += unit.cargo.metal
-            reward_mat[29] += unit.cargo.water
-            reward_mat[30] += unit.cargo.ore
-            reward_mat[31] += unit.cargo.ice
-            reward_mat[32] += unit.power
+                reward_mat[20] += 1
+            reward_mat[21] += unit.cargo.metal
+            reward_mat[22] += unit.cargo.water
+            reward_mat[23] += unit.cargo.ore
+            reward_mat[24] += unit.cargo.ice
+            reward_mat[25] += unit.power
+
         return reward_mat.dot(reward_weights) 
