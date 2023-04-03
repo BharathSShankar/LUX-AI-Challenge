@@ -31,14 +31,14 @@ class ResNetBlock(nn.Module):
         # Projection shortcut in case input and output shapes are different
         if self.use_projection:
             shortcut = nn.Conv(self.channels, kernel_size=(1, 1), strides=self.strides, name='shortcut_conv')(shortcut)
-            shortcut = nn.BatchNorm(name='shortcut_bn')(shortcut)
+            shortcut = nn.LayerNorm(name='shortcut_ln')(shortcut)
 
         x = nn.Conv(self.channels, kernel_size=(self.ksize, self.ksize), strides=self.strides, name='conv1')(x)
-        x = nn.BatchNorm(name='bn1')(x)
+        x = nn.LayerNorm(name='ln1')(x)
         x = nn.relu(x)
 
         x = nn.Conv(self.channels, kernel_size=(self.ksize, self.ksize), strides=(1, 1), name='conv2')(x)
-        x = nn.BatchNorm(name='bn2')(x)
+        x = nn.LayerNorm(name='ln2')(x)
 
         if self.use_se:
             x = SELayer(self.channels)(x)

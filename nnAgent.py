@@ -26,7 +26,6 @@ class nnAgentTrainer(core.Actor):
                 actor: ActorNet, 
                 critic: CriticNet, 
                 memory: PPOMemory,
-                mapScorer: MapScorer,
                 actor_params, critic_params, mapScorer_params
         ) -> None:
 
@@ -38,27 +37,19 @@ class nnAgentTrainer(core.Actor):
         self.actor = actor
         self.critic = critic
         self.memory = memory
-        self.mapScorer = mapScorer
         self.actor_params = actor_params
         self.critic_params = critic_params
         self.mapScorer_params = mapScorer_params
 
         self.loss_val_and_grad = jax.value_and_grad(self.loss_fn_ppo, argnums=(4, 5))
 
+    # TODO: add allan's bid policy and placement policy
     def bid_policy(self, step: int, obs, remainingOverageTime: int = 60):
         return dict(faction="AlphaStrike", bid=0)
 
     def factory_placement_policy(self, step: int, obs, remainingOverageTime: int = 60):
         if my_turn_to_place_factory(self.player == "player_0", step): 
-            gameState = obs_to_game_state(step, self.env_cfg, obs)
-            map_vec = map_2_vec(gameState)
-            map_val = self.factory_policy.apply(self.factory_weights, map_vec)
-            map_val[~gameState.board.valid_spawns_mask] = -np.inf
-            idx = np.argmax(map_val)
-            pos = idx // gameState.env_cfg.map_size, idx % gameState.env_cfg.map_size
-            return dict(spawn = pos, metal = 150, water = 150)
-        return {}
-
+            pass
 
     def choose_act(self, step: int, obs, remainingOverageTime: int = 60):
 

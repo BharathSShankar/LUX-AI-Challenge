@@ -84,7 +84,7 @@ class JuxWrapperEnv(gym.Wrapper):
         obs_dict["ACT_FACTS"] = jnp.array(facts_exist)
 
         unit_list = np.zeros((300, 7))
-        units_exist = np.zeroes((300,)) 
+        units_exist = np.zeros((300,)) 
 
         for unit in obs.units[player]:
             num = int(unit.split("_")[-1])
