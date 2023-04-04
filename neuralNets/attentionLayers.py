@@ -4,11 +4,14 @@ from flax import linen as nn
 class Att4Actions(nn.Module):
     hidden_dim_unit: int
     hidden_dim_fact: int
-    out_units: int = 19
+    out_units: int = 13
     out_facts: int = 3
 
     @nn.compact
     def __call__(self, globalVec, localVecUnit, localVecFact):
+        globalVec = jnp.expand_dims(globalVec, 1)
+        localVecUnit = jnp.expand_dims(localVecUnit, 1)
+        localVecFact = jnp.expand_dims(localVecFact, 1)
         # Apply linear transformations to global vector for keys and values
         k_unit = nn.Dense(self.hidden_dim_unit)(globalVec)
         v_unit = nn.Dense(self.hidden_dim_unit)(globalVec)
@@ -29,11 +32,11 @@ class Att4Actions(nn.Module):
 
         # Apply linear transformation to output of unit attention layer
         unit_actions = nn.Dense(self.out_units)(unit_actions)
-        unit_actions = jnp.selu(unit_actions)
+        unit_actions = nn.selu(unit_actions)
 
         # Apply linear transformation to output of fact attention layer
         fact_actions = nn.Dense(self.out_facts)(fact_actions)
-        fact_actions = jnp.selu(fact_actions)
+        fact_actions = nn.selu(fact_actions)
 
         # Return the outputs
         return unit_actions, fact_actions

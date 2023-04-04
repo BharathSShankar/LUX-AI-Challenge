@@ -19,7 +19,7 @@ class MapScorer(nn.Module):
             x = ResNetBlock(self.channels[i], use_projection=True)(x)
             x = nn.LayerNorm()(x)
             x = nn.selu(x)
-            x = nn.max_pool(x, (2,2))
+            x = nn.max_pool(x, (2,2, 1))
             print(x.shape)
         # Reshape the output and apply the fully connected layer and sigmoid activation function
         x = nn.Conv(1, (1, 1))(x)

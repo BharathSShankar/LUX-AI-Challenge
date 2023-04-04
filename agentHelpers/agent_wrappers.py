@@ -7,67 +7,48 @@ from gym import ObservationWrapper, Env, RewardWrapper, ActionWrapper
 from typing import Dict, Union
 
 import numpy as np
+from agentHelpers.agent_constants import LIC_WT
 from lux.kit import GameState, obs_to_game_state
 
 from agentHelpers.agent_obs_processing import fact_2_vec, global_2_vec, img_2_vec, unit_2_vec
 
-LIC_WT = 0.1
-REW_WTS = jnp.array([
-    50,
-    0.005,
-    0.006,
-    0.003,
-    0.004,
-    0.0001,
-    -50,
-    -0.005,
-    -0.006,
-    -0.003,
-    -0.004,
-    -0.0001,
-    1,
-    10,
-    -0.0001,
-    -0.0001,
-    0.001,
-    0.002,
-    0.0005,
-    -1,
-    -10,
-    0.0001,
-    0.0001,
-    -0.001,
-    -0.002,
-    -0.0005,
-])
+#TODO: add Support for vetorized envs
 
 class JuxWrapperEnv(gym.Wrapper):
-    def __init__(self, env:JuxEnv, rew_weights):
+    def __init__(self, env: JuxEnv, rew_weights):
         super.__init__(env)
         self.reward_weights = rew_weights
-    
+
     def step(self, step, action, state):
         if step == 0:
             bid, faction = jux.actions.bid_action_from_lux(action)
-            new_state, (obs, rewards, dones, infos) = self.env.step_bid(state, bid, faction)
+            new_state, (obs, rewards, dones, infos) = self.env.step_bid(
+                state, bid, faction)
         elif step < 0:
-            spawn, water, metal = jux.actions.factory_placement_action_from_lux(action)
-            new_state, (obs, rewards, dones, infos) = self.env.step_factory_placement(state, spawn, water, metal)
+            spawn, water, metal = jux.actions.factory_placement_action_from_lux(
+                action)
+            new_state, (obs, rewards, dones, infos) = self.env.step_factory_placement(
+                state, spawn, water, metal)
         else:
             jux_act = JuxAction.from_lux(state, action)
-            new_state, (obs, rewards, dones, infos) = self.env.step_late_game(state, jux_act)
+            new_state, (obs, rewards, dones, infos) = self.env.step_late_game(
+                state, jux_act)
 
         new_state_mod = new_state.to_lux()
 
-        reward_p0 = LIC_WT * (rewards[0] - rewards[1]) + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_0", "player_1", self.reward_weights)
-        reward_p0 -= JuxWrapperEnv.get_dense_rewards(state.to_lux(), "player_0", "player_1", self.reward_weights) 
+        reward_p0 = LIC_WT * (rewards[0] - rewards[1]) + JuxWrapperEnv.get_dense_rewards(
+            new_state_mod, "player_0", "player_1", self.reward_weights)
+        reward_p0 -= JuxWrapperEnv.get_dense_rewards(
+            state.to_lux(), "player_0", "player_1", self.reward_weights)
 
-        reward_p1 = LIC_WT * (rewards[1] - rewards[0]) + JuxWrapperEnv.get_dense_rewards(new_state_mod, "player_1", "player_0", self.reward_weights)
-        reward_p1 -= JuxWrapperEnv.get_dense_rewards(state.to_lux(), "player_1", "player_0", self.reward_weights)
+        reward_p1 = LIC_WT * (rewards[1] - rewards[0]) + JuxWrapperEnv.get_dense_rewards(
+            new_state_mod, "player_1", "player_0", self.reward_weights)
+        reward_p1 -= JuxWrapperEnv.get_dense_rewards(
+            state.to_lux(), "player_1", "player_0", self.reward_weights)
         return new_state, obs, [reward_p0, reward_p1], dones, infos
-        
+
     @staticmethod
-    def convert_obs(obs:GameState, player) -> Dict[str, jnp.array]:
+    def convert_obs(obs: GameState, player) -> Dict[str, jnp.array]:
         obs_dict = {}
         obs_dict["GIV"] = global_2_vec(obs, player)
         obs_dict["IMG"] = img_2_vec(obs, player)
@@ -84,7 +65,7 @@ class JuxWrapperEnv(gym.Wrapper):
         obs_dict["ACT_FACTS"] = jnp.array(facts_exist)
 
         unit_list = np.zeros((300, 7))
-        units_exist = np.zeros((300,)) 
+        units_exist = np.zeros((300,))
 
         for unit in obs.units[player]:
             num = int(unit.split("_")[-1])
@@ -92,9 +73,9 @@ class JuxWrapperEnv(gym.Wrapper):
 
         obs_dict["UNIT"] = jnp.array(unit_list)
         obs_dict["ACT_UNITS"] = jnp.array(units_exist)
-        
-        return obs_dict 
-    
+
+        return obs_dict
+
     @staticmethod
     def get_dense_rewards(gameState, player, opposition, reward_weights):
         reward_mat = jnp.zeros([26])
@@ -119,12 +100,12 @@ class JuxWrapperEnv(gym.Wrapper):
                 reward_mat[12] += 1
             else:
                 reward_mat[13] += 1
-            reward_mat[14] += unit.cargo.metal 
-            reward_mat[15] += unit.cargo.water 
-            reward_mat[16] += unit.cargo.ore 
-            reward_mat[17] += unit.cargo.ice 
-            reward_mat[18] += unit.power 
-    
+            reward_mat[14] += unit.cargo.metal
+            reward_mat[15] += unit.cargo.water
+            reward_mat[16] += unit.cargo.ore
+            reward_mat[17] += unit.cargo.ice
+            reward_mat[18] += unit.power
+
         for unit in gameState.units[opposition].values():
             if unit.unit_type == "LIGHT":
                 reward_mat[19] += 1
@@ -136,4 +117,4 @@ class JuxWrapperEnv(gym.Wrapper):
             reward_mat[24] += unit.cargo.ice
             reward_mat[25] += unit.power
 
-        return reward_mat.dot(reward_weights) 
+        return reward_mat.dot(reward_weights)
