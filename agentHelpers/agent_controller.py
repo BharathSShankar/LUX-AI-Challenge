@@ -11,12 +11,11 @@ import jax
 KEY = jax.random.PRNGKey(0)
 
 class Controller:
-    def __init__(self, action_space: Space.Space) -> None:
+    def __init__(self, action_space) -> None:
         self.action_space = action_space
 
-class OverallController(Controller):
+class OverallController:
     def __init__(self, env_cfg) -> None:
-        super(spaces.Tuple(unit_action_space, fact_action_space))
         self.env_cfg = env_cfg
 
     def convert_output_to_actions(

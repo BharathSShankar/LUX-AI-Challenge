@@ -14,9 +14,9 @@ from agentHelpers.agent_obs_processing import fact_2_vec, global_2_vec, img_2_ve
 
 #TODO: add Support for vetorized envs
 
-class JuxWrapperEnv(gym.Wrapper):
-    def __init__(self, env: JuxEnv, rew_weights):
-        super.__init__(env)
+class JuxWrapperEnv:
+    def __init__(self, env, rew_weights):
+        self.env = env
         self.reward_weights = rew_weights
 
     def step(self, step, action, state):
@@ -78,7 +78,7 @@ class JuxWrapperEnv(gym.Wrapper):
 
     @staticmethod
     def get_dense_rewards(gameState, player, opposition, reward_weights):
-        reward_mat = jnp.zeros([26])
+        reward_mat = np.zeros([26])
         for factory in gameState.factories[player].values():
             reward_mat[0] += 1
             reward_mat[1] += factory.cargo.metal
@@ -117,4 +117,8 @@ class JuxWrapperEnv(gym.Wrapper):
             reward_mat[24] += unit.cargo.ice
             reward_mat[25] += unit.power
 
-        return reward_mat.dot(reward_weights)
+        return jnp.array(reward_mat).dot(reward_weights)
+    
+    def reset(self, seed):
+        new_state = self.env.reset(seed)
+        return new_state

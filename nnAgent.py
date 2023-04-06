@@ -15,8 +15,9 @@ from rlax import truncated_generalized_advantage_estimation
 from neuralNets.actorNet import ActorNet
 from neuralNets.criticNet import CriticNet
 from neuralNets.PPOMemory import PPOMemory
+from agentHelpers.agent_early_bidding import bidding, fact_placement_score
 
-class nnAgentTrainer(core.Actor):
+class nnAgentTrainer:
 
     def __init__(self,
                  player: str,
@@ -32,7 +33,7 @@ class nnAgentTrainer(core.Actor):
 
         self.player = player
         self.opp_player = "player_1" if self.player == "player_0" else "player_0"
-        np.random.seed(0)
+        self.rng = jax.random.PRNGKey(0)
         self.env_cfg: EnvConfig = env_cfg
         self.controller = controller
         self.actor = actor
@@ -47,13 +48,21 @@ class nnAgentTrainer(core.Actor):
         self.loss_val_and_grad = jax.value_and_grad(
             self.loss_fn_ppo, argnums=(4, 5))
 
-    # TODO: add allan's bid policy and placement policy
-    def bid_policy(self, step: int, obs, remainingOverageTime: int = 60):
-        return dict(faction="AlphaStrike", bid=0)
+    def bid_policy(self, step: int, gameState, remainingOverageTime: int = 60):
+        state_rep = JuxWrapperEnv.convert_obs(gameState, self.player)
+        return bidding(state_rep["IMG"])
 
-    def factory_placement_policy(self, step: int, obs, remainingOverageTime: int = 60):
-        if my_turn_to_place_factory(self.player == "player_0", step):
-            pass
+    def factory_placement_policy(self, step: int, gameState, remainingOverageTime: int = 60):
+        if my_turn_to_place_factory(self.player != "player_0", step):
+            state_rep = JuxWrapperEnv.convert_obs(gameState, self.player)
+            mapScores = fact_placement_score(state_rep["IMG"])
+            mapScores = mapScores.at[~gameState.board.valid_spawns_mask].set(-jnp.inf)
+            mapScores = mapScores.reshape(-1)
+            sample = jax.random.categorical(self.rng, mapScores).item()
+            print(sample)
+            self.rng, _ = jax.random.split(self.rng)
+            return {"spawn" : (sample // 48, sample % 48), "water" : 150 - 20 // self.env_cfg.MAX_FACTORIES, "metal":150 - 20 // self.env_cfg.MAX_FACTORIES} 
+        return {}
 
     def choose_act(self, step: int, obs, remainingOverageTime: int = 60):
 
@@ -114,7 +123,8 @@ class nnAgentTrainer(core.Actor):
                 grad_loss_crit, self.critic_opt, self.critic_state, self.critic_params)
             self.actor_state, self.actor_params = self.update_step(
                 grad_loss_act, self.actor_opt, self.actor_state, self.actor_params)
-
+        return self.actor_params, self.actor_state, self.critic_params, self.critic_state
+        
     @partial(jax.jit, static_argnums=(0, 1, 2, 3,))
     def loss_fn_ppo(self, gamma, gae_lambda, eps, actor_params, critic_params):
         to_change_old, global_states, img_states, fact_states, unit_states, fact_actions,\
