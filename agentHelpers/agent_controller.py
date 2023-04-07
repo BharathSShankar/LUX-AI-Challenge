@@ -38,7 +38,7 @@ class OverallController:
 
         for i in range(len(facts_exist)):
             if facts_exist[i]:
-                fact_id = "fact_" + str(i) 
+                fact_id = "factory_" + str(i) 
                 actions[fact_id] = jax.random.categorical(KEY, logits=fact_actions_logits[i])
                 act_probs[fact_id] = fact_actions_logits[i, actions[fact_id]]
 

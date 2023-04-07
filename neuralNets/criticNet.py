@@ -28,10 +28,10 @@ class CriticNet(nn.Module):
         global_emb = EmbeddingLayer(self.embed_dim)(global_info)
         global_emb = EmbeddingLayer(self.embed_dim * self.map_size * self.map_size)(global_emb)
         global_emb = global_emb.reshape((self.map_size, self.map_size, -1))
-
+        img_info = img_info.reshape((self.map_size, self.map_size, -1))
         # Concatenate the image information with the global information
         img_features = jnp.concatenate((img_info, global_emb), axis= -1)
-
+        
         # Apply a ResNetBlock followed by max pooling for each residual layer
         for i in range(self.num_resid_layers):
             img_features = ResNetBlock(self.channel_nums[i],
@@ -41,7 +41,7 @@ class CriticNet(nn.Module):
             img_features = nn.max_pool(img_features, window_shape=(2, 2))
 
         # Reshape the image into global features
-        global_features = img_features.reshape((img_features.shape[-1], -1))
+        global_features = img_features.reshape((-1))
 
         # Apply two fully connected layers followed by layer normalization and ReLU activation
         value = nn.Dense(self.embed_dim // 4)(global_features)

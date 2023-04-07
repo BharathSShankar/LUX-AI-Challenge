@@ -27,7 +27,6 @@ class ResNetBlock(nn.Module):
     @nn.compact
     def __call__(self, x):
         shortcut = x
-
         # Projection shortcut in case input and output shapes are different
         if self.use_projection:
             shortcut = nn.Conv(self.channels, kernel_size=(1, 1), strides=self.strides, name='shortcut_conv')(shortcut)

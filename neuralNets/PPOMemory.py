@@ -30,14 +30,13 @@ class PPOMemory:
         indices = np.arange(n_states, dtype=np.int64)
         np.random.shuffle(indices)
         batches = [indices[i:i+self.batch_size] for i in batch_start]
-
         return (jnp.stack(self.to_change, axis=0),
                 jnp.stack(self.global_states, axis=0),
                 jnp.stack(self.img_states, axis=0),
                 jnp.stack(self.fact_states, axis=0),
                 jnp.stack(self.unit_states, axis=0),
-                jnp.stack(self.fact_actions, axis=0),
-                jnp.stack(self.unit_actions, axis=0),
+                self.fact_actions,
+                self.unit_actions,
                 jnp.stack(self.fact_probs, axis=0),
                 jnp.stack(self.unit_probs, axis=0),
                 jnp.stack(self.unit_probs_R, axis=0),

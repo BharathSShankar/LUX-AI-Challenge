@@ -13,7 +13,6 @@ def global_2_vec(gameState: GameState, player: str) -> jnp.array:
     opposition = "player_1" if player == "player_0" else "player_0"
     giv_size = GIV_SIZE
     stateSpace = np.zeros(giv_size).astype(jnp.float32)
-    
     own_st_id = set()
     opp_st_id = set()
 
@@ -183,7 +182,6 @@ def map_2_vec(gameState: GameState, player : str) -> jnp.array:
     stateSpace[0, :, :] = gameState.board.ice
     stateSpace[1, :, :] = gameState.board.ore
     stateSpace[2, :, :] = gameState.board.rubble
-
     for factory in gameState.factories[player].values():
         x, y = factory.pos.x, factory.pos.y
         stateSpace[3, x, y] = 1

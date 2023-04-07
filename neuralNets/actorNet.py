@@ -38,10 +38,10 @@ class ActorNet(nn.Module):
 
         # Reshaping the global embeddings
         global_emb = global_emb.reshape((self.map_size, self.map_size, -1))
-
+        img_info = img_info.reshape(self.map_size, self.map_size, -1)
         # Concatenating image information and global embeddings
         img_features = jnp.concatenate((img_info, global_emb), axis=2)
-
+        
         # Passing image information through residual blocks
         for i in range(self.num_resid_layers):
             img_features = ResNetBlock(
@@ -62,7 +62,7 @@ class ActorNet(nn.Module):
         to_change = nn.sigmoid(nn.Dense(1)(unit_actions))
 
         # Getting logits for unit actions and fact actions
-        unit_actions_logits = nn.Dense(360)(unit_actions)
+        unit_actions_logits = nn.Dense(260)(unit_actions)
         fact_actions_logits = nn.Dense(3)(fact_actions)
 
         # Getting continuous and discrete parameters for unit actions
@@ -70,7 +70,7 @@ class ActorNet(nn.Module):
         unit_actions_disc_params_N = nn.Dense(160)(unit_actions)
         unit_actions_disc_params_Rep = nn.Dense(80)(unit_actions)
 
-        unit_actions_logits = unit_actions_logits.reshape((unit_actions_logits.shape[0], 20, 18))
+        unit_actions_logits = unit_actions_logits.reshape((unit_actions_logits.shape[0], 20, 13))
 
         unit_actions_disc_params_R = unit_actions_disc_params_R.reshape((unit_actions_logits.shape[0], 20, 5))
         unit_actions_disc_params_N = unit_actions_disc_params_N.reshape((unit_actions_logits.shape[0], 20, 8))
